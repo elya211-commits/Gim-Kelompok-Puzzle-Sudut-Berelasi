@@ -1,0 +1,856 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Puzzle Trigonometri: Sudut Berelasi SMA</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #311042 100%);
+            min-height: 100vh;
+            color: #f8fafc;
+            user-select: none;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(15, 23, 42, 0.6);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #6366f1;
+            border-radius: 4px;
+        }
+
+        .glass-panel {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .glass-card {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+        }
+
+        .draggable-item {
+            touch-action: none;
+            cursor: grab;
+            transition: transform 0.15s ease, box-shadow 0.15s ease, background-color 0.2s ease;
+        }
+        .draggable-item:active {
+            cursor: grabbing;
+            transform: scale(1.05);
+        }
+
+        .draggable-item.selected {
+            ring: 4px;
+            border-color: #38bdf8;
+            box-shadow: 0 0 15px rgba(56, 189, 248, 0.5);
+            transform: scale(1.03);
+        }
+
+        .dropzone {
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .dropzone.drag-over {
+            border-color: #38bdf8 !important;
+            background-color: rgba(56, 189, 248, 0.15) !important;
+            transform: scale(1.02);
+        }
+
+        .dropzone.correct {
+            border-color: #22c55e !important;
+            background-color: rgba(34, 197, 94, 0.2) !important;
+        }
+
+        .dropzone.wrong {
+            animation: shake 0.4s ease-in-out;
+            border-color: #ef4444 !important;
+            background-color: rgba(239, 68, 68, 0.2) !important;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            20%, 60% { transform: translateX(-6px); }
+            40%, 80% { transform: translateX(6px); }
+        }
+
+        /* Puzzle Image Mask Revealer */
+        .puzzle-piece {
+            transition: opacity 0.5s ease, transform 0.5s ease;
+            background-size: 300% 200%;
+        }
+
+        .puzzle-slot-1 { background-position: 0% 0%; }
+        .puzzle-slot-2 { background-position: 50% 0%; }
+        .puzzle-slot-3 { background-position: 100% 0%; }
+        .puzzle-slot-4 { background-position: 0% 100%; }
+        .puzzle-slot-5 { background-position: 50% 100%; }
+        .puzzle-slot-6 { background-position: 100% 100%; }
+
+        .math-expr {
+            font-family: 'Cambria', 'Georgia', serif;
+            font-style: italic;
+        }
+    </style>
+</head>
+<body class="p-3 md:p-6 flex flex-col justify-between">
+
+    <!-- Header -->
+    <header class="max-w-6xl mx-auto w-full mb-4">
+        <div class="glass-panel rounded-2xl p-4 md:px-6 flex flex-wrap items-center justify-between gap-4 shadow-xl">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-indigo-600 flex items-center justify-center text-white shadow-lg shadow-indigo-500/30">
+                    <i class="fa-solid fa-shapes text-xl"></i>
+                </div>
+                <div>
+                    <h1 class="text-lg md:text-2xl font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-indigo-300 via-sky-300 to-pink-300">
+                        MathPuzzle: Sudut Berelasi
+                    </h1>
+                    <p class="text-xs md:text-sm text-slate-400">Trigonometri Kuadran I, II, III & IV (SMA)</p>
+                </div>
+            </div>
+
+            <!-- Stats & Action Buttons -->
+            <div class="flex items-center gap-3">
+                <div class="glass-card px-3 py-1.5 rounded-xl text-center">
+                    <span class="text-xs text-slate-400 block">Skor</span>
+                    <span id="score-display" class="text-base md:text-lg font-bold text-amber-400">0 / 100</span>
+                </div>
+                <div class="glass-card px-3 py-1.5 rounded-xl text-center">
+                    <span class="text-xs text-slate-400 block">Waktu</span>
+                    <span id="timer-display" class="text-base md:text-lg font-bold text-cyan-400">00:00</span>
+                </div>
+                <button id="btn-theory" class="bg-slate-700/80 hover:bg-slate-600 text-white p-2.5 rounded-xl transition shadow text-xs md:text-sm flex items-center gap-1.5">
+                    <i class="fa-solid fa-book-open text-indigo-400"></i>
+                    <span class="hidden sm:inline">Rangkuman</span>
+                </button>
+                <button id="btn-sound" class="bg-slate-700/80 hover:bg-slate-600 text-white p-2.5 rounded-xl transition shadow">
+                    <i id="sound-icon" class="fa-solid fa-volume-high text-sky-400"></i>
+                </button>
+                <button id="btn-reset" class="bg-indigo-600 hover:bg-indigo-500 text-white px-3.5 py-2.5 rounded-xl font-semibold text-xs md:text-sm transition shadow-lg shadow-indigo-600/30 flex items-center gap-1.5">
+                    <i class="fa-solid fa-rotate-right"></i>
+                    <span>Acak Soal</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Grid -->
+    <main class="max-w-6xl mx-auto w-full grid grid-cols-1 lg:grid-cols-12 gap-6 items-start flex-1">
+        
+        <!-- Left Column: Soal & Dropzones (7 Cols) -->
+        <section class="lg:col-span-7 space-y-4">
+            
+            <!-- Mode & Group Selector Bar -->
+            <div class="glass-panel p-3 rounded-2xl flex flex-wrap items-center justify-between gap-3">
+                <!-- Group Dropdown Selector -->
+                <div class="flex items-center gap-2">
+                    <label for="group-select" class="text-xs md:text-sm font-semibold text-slate-300 flex items-center gap-1.5">
+                        <i class="fa-solid fa-users text-amber-400"></i> Kelompok:
+                    </label>
+                    <select id="group-select" class="bg-slate-800 text-amber-300 font-bold border border-amber-500/40 rounded-xl text-xs md:text-sm px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-amber-400 cursor-pointer">
+                        <option value="1">Kelompok 1</option>
+                        <option value="2">Kelompok 2</option>
+                        <option value="3">Kelompok 3</option>
+                        <option value="4">Kelompok 4</option>
+                        <option value="5">Kelompok 5</option>
+                        <option value="6">Kelompok 6</option>
+                    </select>
+                </div>
+
+                <!-- Mode Selector -->
+                <div class="flex gap-2">
+                    <button id="mode-formula" class="mode-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-indigo-600 text-white shadow">
+                        Bentuk Rumus (&alpha;)
+                    </button>
+                    <button id="mode-numeric" class="mode-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-800 text-slate-400 hover:bg-slate-700">
+                        Nilai Sudut (&deg;)
+                    </button>
+                </div>
+            </div>
+
+            <!-- Questions Grid (6 Slots) -->
+            <div id="questions-container" class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                <!-- Dynamic Soal Dropzones generated via JS -->
+            </div>
+        </section>
+
+        <!-- Right Column: Puzzle Preview & Answer Items (5 Cols) -->
+        <section class="lg:col-span-5 space-y-4">
+            
+            <!-- Puzzle Reveal Visualizer -->
+            <div class="glass-panel p-4 rounded-2xl shadow-xl">
+                <div class="flex items-center justify-between mb-2">
+                    <h2 class="text-sm font-bold text-slate-200 flex items-center gap-2">
+                        <i class="fa-solid fa-puzzle-piece text-pink-400"></i> Puzzle Misteri Trigonometri
+                    </h2>
+                    <span id="progress-text" class="text-xs text-indigo-300 font-semibold">0 / 6 Terbuka</span>
+                </div>
+
+                <div class="relative w-full aspect-[3/2] rounded-xl overflow-hidden border border-slate-700/60 bg-slate-900 shadow-inner">
+                    <!-- Base Hidden Picture -->
+                    <div id="puzzle-bg" class="absolute inset-0 bg-cover bg-center transition-all duration-700 filter brightness-95" 
+                         style="background-image: url('https://images.unsplash.com/photo-1506703719100-a0f3a48c0f86?auto=format&fit=crop&w=1000&q=80');">
+                    </div>
+
+                    <!-- 2x3 Grid Overlays -->
+                    <div class="absolute inset-0 grid grid-cols-3 grid-rows-2 gap-0.5 p-0.5 bg-slate-950/40">
+                        <div data-piece="1" class="puzzle-mask bg-slate-950/90 backdrop-blur-md flex items-center justify-center transition-all duration-500 text-slate-600 font-bold text-lg border border-slate-800/50">1</div>
+                        <div data-piece="2" class="puzzle-mask bg-slate-950/90 backdrop-blur-md flex items-center justify-center transition-all duration-500 text-slate-600 font-bold text-lg border border-slate-800/50">2</div>
+                        <div data-piece="3" class="puzzle-mask bg-slate-950/90 backdrop-blur-md flex items-center justify-center transition-all duration-500 text-slate-600 font-bold text-lg border border-slate-800/50">3</div>
+                        <div data-piece="4" class="puzzle-mask bg-slate-950/90 backdrop-blur-md flex items-center justify-center transition-all duration-500 text-slate-600 font-bold text-lg border border-slate-800/50">4</div>
+                        <div data-piece="5" class="puzzle-mask bg-slate-950/90 backdrop-blur-md flex items-center justify-center transition-all duration-500 text-slate-600 font-bold text-lg border border-slate-800/50">5</div>
+                        <div data-piece="6" class="puzzle-mask bg-slate-950/90 backdrop-blur-md flex items-center justify-center transition-all duration-500 text-slate-600 font-bold text-lg border border-slate-800/50">6</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Draggable Answer Pool (7 Choices) -->
+            <div class="glass-panel p-4 rounded-2xl shadow-xl">
+                <div class="flex items-center justify-between mb-3">
+                    <h3 class="text-sm font-bold text-slate-200 flex items-center gap-2">
+                        <i class="fa-solid fa-hand-pointer text-sky-400"></i> Pilihan Jawaban (7 Opsi)
+                    </h3>
+                    <span class="text-[11px] text-slate-400">Drag ke soal atau Klik untuk pasang</span>
+                </div>
+
+                <div id="answers-container" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-2 gap-2.5 min-h-[180px]">
+                    <!-- 7 Dynamic Answer Cards generated via JS -->
+                </div>
+            </div>
+
+        </section>
+    </main>
+
+    <!-- Modal Rangkuman Teori -->
+    <div id="modal-theory" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden">
+        <div class="glass-panel bg-slate-900 border-slate-700 rounded-3xl max-w-2xl w-full p-6 max-h-[85vh] overflow-y-auto relative shadow-2xl">
+            <button id="close-theory" class="absolute top-4 right-4 w-9 h-9 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white flex items-center justify-center transition">
+                <i class="fa-solid fa-xmark text-lg"></i>
+            </button>
+
+            <h2 class="text-xl font-bold text-indigo-300 mb-2 flex items-center gap-2">
+                <i class="fa-solid fa-compass text-pink-400"></i> Panduan Sudut Berelasi Kuadran I - IV
+            </h2>
+            <p class="text-xs text-slate-400 mb-4">Gunakan patokan <span class="text-amber-300 font-semibold">180&deg; / 360&deg;</span> (fungsi tetap) atau <span class="text-sky-300 font-semibold">90&deg; / 270&deg;</span> (fungsi berubah).</p>
+
+            <!-- Quadrant Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4 text-xs">
+                <!-- Kuadran I -->
+                <div class="p-3.5 rounded-xl bg-slate-800/80 border border-indigo-500/30">
+                    <div class="font-bold text-amber-400 mb-1 border-b border-slate-700 pb-1">Kuadran I (0&deg; - 90&deg;)</div>
+                    <p class="text-emerald-400 font-semibold mb-1">Semua Positif (+)</p>
+                    <ul class="space-y-0.5 text-slate-300 font-mono">
+                        <li>sin(90&deg; - &alpha;) = cos &alpha;</li>
+                        <li>cos(90&deg; - &alpha;) = sin &alpha;</li>
+                        <li>tan(90&deg; - &alpha;) = cot &alpha;</li>
+                    </ul>
+                </div>
+
+                <!-- Kuadran II -->
+                <div class="p-3.5 rounded-xl bg-slate-800/80 border border-indigo-500/30">
+                    <div class="font-bold text-amber-400 mb-1 border-b border-slate-700 pb-1">Kuadran II (90&deg; - 180&deg;)</div>
+                    <p class="text-sky-400 font-semibold mb-1">Hanya SIN & CSC Positif (+)</p>
+                    <ul class="space-y-0.5 text-slate-300 font-mono">
+                        <li>sin(180&deg; - &alpha;) = sin &alpha;</li>
+                        <li>cos(180&deg; - &alpha;) = -cos &alpha;</li>
+                        <li>tan(180&deg; - &alpha;) = -tan &alpha;</li>
+                        <li>sin(90&deg; + &alpha;) = cos &alpha;</li>
+                    </ul>
+                </div>
+
+                <!-- Kuadran III -->
+                <div class="p-3.5 rounded-xl bg-slate-800/80 border border-indigo-500/30">
+                    <div class="font-bold text-amber-400 mb-1 border-b border-slate-700 pb-1">Kuadran III (180&deg; - 270&deg;)</div>
+                    <p class="text-orange-400 font-semibold mb-1">Hanya TAN & COT Positif (+)</p>
+                    <ul class="space-y-0.5 text-slate-300 font-mono">
+                        <li>sin(180&deg; + &alpha;) = -sin &alpha;</li>
+                        <li>cos(180&deg; + &alpha;) = -cos &alpha;</li>
+                        <li>tan(180&deg; + &alpha;) = tan &alpha;</li>
+                        <li>cos(270&deg; - &alpha;) = -sin &alpha;</li>
+                    </ul>
+                </div>
+
+                <!-- Kuadran IV -->
+                <div class="p-3.5 rounded-xl bg-slate-800/80 border border-indigo-500/30">
+                    <div class="font-bold text-amber-400 mb-1 border-b border-slate-700 pb-1">Kuadran IV (270&deg; - 360&deg;)</div>
+                    <p class="text-pink-400 font-semibold mb-1">Hanya COS & SEC Positif (+)</p>
+                    <ul class="space-y-0.5 text-slate-300 font-mono">
+                        <li>sin(360&deg; - &alpha;) = -sin &alpha;</li>
+                        <li>cos(360&deg; - &alpha;) = cos &alpha;</li>
+                        <li>tan(360&deg; - &alpha;) = -tan &alpha;</li>
+                        <li>cos(-&alpha;) = cos &alpha;</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Tip mnemonic -->
+            <div class="p-3 rounded-xl bg-indigo-950/60 border border-indigo-500/40 text-xs text-indigo-200">
+                <i class="fa-solid fa-lightbulb text-amber-300 mr-1"></i>
+                <strong>Tips Hafalan Kuadran:</strong> <span class="text-amber-200">"<b>S</b>emua <b>S</b>inus <b>T</b>angen <b>C</b>osinus"</span> (Kuadran I &rarr; II &rarr; III &rarr; IV yang bernilai positif).
+            </div>
+        </div>
+    </div>
+
+    <!-- Victory Modal -->
+    <div id="modal-victory" class="fixed inset-0 bg-slate-950/90 backdrop-blur-lg z-50 flex items-center justify-center p-4 hidden">
+        <div class="glass-panel bg-slate-900 border-indigo-500/50 rounded-3xl max-w-md w-full p-6 text-center relative shadow-2xl">
+            <div class="w-20 h-20 mx-auto mb-4 rounded-full bg-gradient-to-tr from-emerald-500 to-teal-300 flex items-center justify-center text-slate-950 text-4xl shadow-lg shadow-emerald-500/30 animate-bounce">
+                <i class="fa-solid fa-trophy"></i>
+            </div>
+
+            <h2 class="text-2xl font-extrabold text-white mb-1">Puzzle Selesai! 🎉</h2>
+            <p class="text-xs text-slate-400 mb-6">Kamu berhasil menyelesaikan seluruh relasi sudut kuadran!</p>
+
+            <div class="grid grid-cols-2 gap-3 mb-6">
+                <div class="glass-card p-3 rounded-2xl">
+                    <span class="text-xs text-slate-400 block">Total Skor</span>
+                    <span id="final-score" class="text-2xl font-black text-amber-400">100</span>
+                </div>
+                <div class="glass-card p-3 rounded-2xl">
+                    <span class="text-xs text-slate-400 block">Waktu Selesai</span>
+                    <span id="final-time" class="text-2xl font-black text-cyan-400">01:15</span>
+                </div>
+            </div>
+
+            <button id="btn-play-again" class="w-full bg-gradient-to-r from-indigo-500 to-pink-500 hover:from-indigo-600 hover:to-pink-600 text-white font-bold py-3 px-6 rounded-xl transition shadow-lg shadow-indigo-500/30">
+                <i class="fa-solid fa-play mr-2"></i> Main Lagi (Soal Baru)
+            </button>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="max-w-6xl mx-auto w-full text-center text-slate-500 text-xs mt-6">
+        Media Pembelajaran Matematika SMA - Game Sudut Berelasi Kuadran I - IV
+    </footer>
+
+    <script>
+        // Audio Synthesizer setup (Web Audio API)
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        let audioCtx = null;
+        let soundEnabled = true;
+
+        function playSound(type) {
+            if (!soundEnabled) return;
+            try {
+                if (!audioCtx) audioCtx = new AudioCtx();
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+
+                const now = audioCtx.currentTime;
+
+                if (type === 'pickup') {
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(320, now);
+                    osc.frequency.exponentialRampToValueAtTime(540, now + 0.08);
+                    gain.gain.setValueAtTime(0.15, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.08);
+                    osc.start(now);
+                    osc.stop(now + 0.08);
+                } else if (type === 'correct') {
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(523.25, now);
+                    osc.frequency.setValueAtTime(659.25, now + 0.1);
+                    osc.frequency.setValueAtTime(783.99, now + 0.2);
+                    gain.gain.setValueAtTime(0.2, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.35);
+                    osc.start(now);
+                    osc.stop(now + 0.35);
+                } else if (type === 'wrong') {
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(220, now);
+                    osc.frequency.setValueAtTime(164.81, now + 0.12);
+                    gain.gain.setValueAtTime(0.2, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+                    osc.start(now);
+                    osc.stop(now + 0.3);
+                } else if (type === 'victory') {
+                    const notes = [523.25, 659.25, 783.99, 1046.50];
+                    notes.forEach((freq, idx) => {
+                        const o = audioCtx.createOscillator();
+                        const g = audioCtx.createGain();
+                        o.connect(g);
+                        g.connect(audioCtx.destination);
+                        o.type = 'triangle';
+                        o.frequency.setValueAtTime(freq, now + idx * 0.12);
+                        g.gain.setValueAtTime(0.25, now + idx * 0.12);
+                        g.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.12 + 0.25);
+                        o.start(now + idx * 0.12);
+                        o.stop(now + idx * 0.12 + 0.25);
+                    });
+                }
+            } catch (e) {
+                console.log("Audio API non-critical error:", e);
+            }
+        }
+
+        // 6 Model Soal Khusus untuk Kelompok 1 - 6 (Mode Rumus)
+        const groupFormulaPools = {
+            1: {
+                questions: [
+                    { q: 'sin(180° - α)', ans: 'sin α', quad: 'K2' },
+                    { q: 'cos(180° - α)', ans: '-cos α', quad: 'K2' },
+                    { q: 'tan(180° + α)', ans: 'tan α', quad: 'K3' },
+                    { q: 'sin(180° + α)', ans: '-sin α', quad: 'K3' },
+                    { q: 'cos(360° - α)', ans: 'cos α', quad: 'K4' },
+                    { q: 'tan(360° - α)', ans: '-tan α', quad: 'K4' }
+                ],
+                distractor: 'cot α'
+            },
+            2: {
+                questions: [
+                    { q: 'cos(90° - α)', ans: 'sin α', quad: 'K1' },
+                    { q: 'cos(90° + α)', ans: '-sin α', quad: 'K2' },
+                    { q: 'sin(90° + α)', ans: 'cos α', quad: 'K2' },
+                    { q: 'sin(270° - α)', ans: '-cos α', quad: 'K3' },
+                    { q: 'tan(90° + α)', ans: '-cot α', quad: 'K2' },
+                    { q: 'tan(270° - α)', ans: 'cot α', quad: 'K3' }
+                ],
+                distractor: '-tan α'
+            },
+            3: {
+                questions: [
+                    { q: 'sin(-α)', ans: '-sin α', quad: 'K4' },
+                    { q: 'cos(-α)', ans: 'cos α', quad: 'K4' },
+                    { q: 'tan(-α)', ans: '-tan α', quad: 'K4' },
+                    { q: 'cos(180° + α)', ans: '-cos α', quad: 'K3' },
+                    { q: 'tan(180° - α)', ans: '-tan α', quad: 'K2' },
+                    { q: 'sin(270° + α)', ans: '-cos α', quad: 'K4' }
+                ],
+                distractor: 'sin α'
+            },
+            4: {
+                questions: [
+                    { q: 'sin(90° - α)', ans: 'cos α', quad: 'K1' },
+                    { q: 'tan(90° - α)', ans: 'cot α', quad: 'K1' },
+                    { q: 'cos(270° - α)', ans: '-sin α', quad: 'K3' },
+                    { q: 'sin(360° - α)', ans: '-sin α', quad: 'K4' },
+                    { q: 'cos(180° - α)', ans: '-cos α', quad: 'K2' },
+                    { q: 'tan(270° + α)', ans: '-cot α', quad: 'K4' }
+                ],
+                distractor: 'tan α'
+            },
+            5: {
+                questions: [
+                    { q: 'cos(180° + α)', ans: '-cos α', quad: 'K3' },
+                    { q: 'sin(180° - α)', ans: 'sin α', quad: 'K2' },
+                    { q: 'tan(180° + α)', ans: 'tan α', quad: 'K3' },
+                    { q: 'cos(270° + α)', ans: 'sin α', quad: 'K4' },
+                    { q: 'sin(270° - α)', ans: '-cos α', quad: 'K3' },
+                    { q: 'tan(360° - α)', ans: '-tan α', quad: 'K4' }
+                ],
+                distractor: '-cot α'
+            },
+            6: {
+                questions: [
+                    { q: 'sin(360° - α)', ans: '-sin α', quad: 'K4' },
+                    { q: 'cos(360° - α)', ans: 'cos α', quad: 'K4' },
+                    { q: 'tan(90° + α)', ans: '-cot α', quad: 'K2' },
+                    { q: 'sin(90° + α)', ans: 'cos α', quad: 'K2' },
+                    { q: 'tan(270° - α)', ans: 'cot α', quad: 'K3' },
+                    { q: 'cos(90° + α)', ans: '-sin α', quad: 'K2' }
+                ],
+                distractor: '-cos α'
+            }
+        };
+
+        // 6 Model Soal Khusus untuk Kelompok 1 - 6 (Mode Nilai Sudut)
+        const groupNumericPools = {
+            1: {
+                questions: [
+                    { q: 'sin(120°)', ans: '½√3', quad: 'K2' },
+                    { q: 'cos(135°)', ans: '-½√2', quad: 'K2' },
+                    { q: 'tan(150°)', ans: '-⅓√3', quad: 'K2' },
+                    { q: 'sin(210°)', ans: '-½', quad: 'K3' },
+                    { q: 'cos(225°)', ans: '-½√2', quad: 'K3' },
+                    { q: 'tan(240°)', ans: '√3', quad: 'K3' }
+                ],
+                distractor: '½'
+            },
+            2: {
+                questions: [
+                    { q: 'sin(300°)', ans: '-½√3', quad: 'K4' },
+                    { q: 'cos(300°)', ans: '½', quad: 'K4' },
+                    { q: 'tan(315°)', ans: '-1', quad: 'K4' },
+                    { q: 'sin(150°)', ans: '½', quad: 'K2' },
+                    { q: 'cos(240°)', ans: '-½', quad: 'K3' },
+                    { q: 'tan(210°)', ans: '⅓√3', quad: 'K3' }
+                ],
+                distractor: '-½√3'
+            },
+            3: {
+                questions: [
+                    { q: 'sin(135°)', ans: '½√2', quad: 'K2' },
+                    { q: 'cos(120°)', ans: '-½', quad: 'K2' },
+                    { q: 'tan(135°)', ans: '-1', quad: 'K2' },
+                    { q: 'sin(225°)', ans: '-½√2', quad: 'K3' },
+                    { q: 'cos(210°)', ans: '-½√3', quad: 'K3' },
+                    { q: 'tan(300°)', ans: '-√3', quad: 'K4' }
+                ],
+                distractor: '½√3'
+            },
+            4: {
+                questions: [
+                    { q: 'sin(240°)', ans: '-½√3', quad: 'K3' },
+                    { q: 'cos(150°)', ans: '-½√3', quad: 'K2' },
+                    { q: 'tan(225°)', ans: '1', quad: 'K3' },
+                    { q: 'sin(330°)', ans: '-½', quad: 'K4' },
+                    { q: 'cos(315°)', ans: '½√2', quad: 'K4' },
+                    { q: 'tan(120°)', ans: '-√3', quad: 'K2' }
+                ],
+                distractor: '⅓√3'
+            },
+            5: {
+                questions: [
+                    { q: 'sin(315°)', ans: '-½√2', quad: 'K4' },
+                    { q: 'cos(330°)', ans: '½√3', quad: 'K4' },
+                    { q: 'tan(240°)', ans: '√3', quad: 'K3' },
+                    { q: 'sin(120°)', ans: '½√3', quad: 'K2' },
+                    { q: 'cos(225°)', ans: '-½√2', quad: 'K3' },
+                    { q: 'tan(330°)', ans: '-⅓√3', quad: 'K4' }
+                ],
+                distractor: '-1'
+            },
+            6: {
+                questions: [
+                    { q: 'sin(210°)', ans: '-½', quad: 'K3' },
+                    { q: 'cos(135°)', ans: '-½√2', quad: 'K2' },
+                    { q: 'tan(315°)', ans: '-1', quad: 'K4' },
+                    { q: 'sin(300°)', ans: '-½√3', quad: 'K4' },
+                    { q: 'cos(120°)', ans: '-½', quad: 'K2' },
+                    { q: 'tan(210°)', ans: '⅓√3', quad: 'K3' }
+                ],
+                distractor: '½√2'
+            }
+        };
+
+        // Images for background puzzle
+        const puzzleImages = [
+            'https://images.unsplash.com/photo-1506703719100-a0f3a48c0f86?auto=format&fit=crop&w=1000&q=80',
+            'https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=1000&q=80',
+            'https://images.unsplash.com/photo-1509228468518-180dd4864904?auto=format&fit=crop&w=1000&q=80'
+        ];
+
+        // Game State Variables
+        let currentMode = 'formula'; // 'formula' or 'numeric'
+        let currentGroup = 1; // 1 to 6
+        let activeQuestions = [];
+        let answerOptions = [];
+        let solvedCount = 0;
+        let totalScore = 0;
+        let timerSeconds = 0;
+        let timerInterval = null;
+        let selectedAnswerId = null;
+
+        function shuffle(array) {
+            const arr = [...array];
+            for (let i = arr.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [arr[i], arr[j]] = [arr[j], arr[i]];
+            }
+            return arr;
+        }
+
+        function formatTimer(seconds) {
+            const m = Math.floor(seconds / 60).toString().padStart(2, '0');
+            const s = (seconds % 60).toString().padStart(2, '0');
+            return `${m}:${s}`;
+        }
+
+        function startTimer() {
+            clearInterval(timerInterval);
+            timerSeconds = 0;
+            document.getElementById('timer-display').textContent = '00:00';
+            timerInterval = setInterval(() => {
+                timerSeconds++;
+                document.getElementById('timer-display').textContent = formatTimer(timerSeconds);
+            }, 1000);
+        }
+
+        function initGame() {
+            solvedCount = 0;
+            totalScore = 0;
+            selectedAnswerId = null;
+            document.getElementById('score-display').textContent = `0 / 100`;
+            document.getElementById('progress-text').textContent = `0 / 6 Terbuka`;
+
+            // Select random puzzle image
+            const bgImg = puzzleImages[Math.floor(Math.random() * puzzleImages.length)];
+            document.getElementById('puzzle-bg').style.backgroundImage = `url('${bgImg}')`;
+
+            // Reset puzzle masks
+            document.querySelectorAll('.puzzle-mask').forEach(mask => {
+                mask.style.opacity = '1';
+                mask.style.transform = 'scale(1)';
+            });
+
+            // Get group dataset based on mode & group choice
+            const groupData = currentMode === 'formula' 
+                ? groupFormulaPools[currentGroup] 
+                : groupNumericPools[currentGroup];
+
+            activeQuestions = groupData.questions.map((q, idx) => ({
+                id: `q-${idx + 1}`,
+                slotIndex: idx + 1,
+                qText: q.q,
+                correctAnswer: q.ans,
+                quadrant: q.quad,
+                isSolved: false
+            }));
+
+            // Prepare 7 answer choices (6 correct answers + 1 distractor)
+            const correctAnswers = activeQuestions.map(q => q.correctAnswer);
+            const rawAnswers = [...correctAnswers, groupData.distractor];
+            const shuffledAnswers = shuffle(rawAnswers);
+
+            answerOptions = shuffledAnswers.map((ans, idx) => ({
+                id: `ans-${idx + 1}`,
+                text: ans,
+                isUsed: false
+            }));
+
+            renderGame();
+            startTimer();
+        }
+
+        function renderGame() {
+            const questionsContainer = document.getElementById('questions-container');
+            const answersContainer = document.getElementById('answers-container');
+
+            // Render Questions / Dropzones
+            questionsContainer.innerHTML = '';
+            activeQuestions.forEach(q => {
+                const card = document.createElement('div');
+                card.className = `glass-panel p-3.5 rounded-2xl relative transition border border-slate-700/60 ${q.isSolved ? 'dropzone correct' : ''}`;
+                card.id = `card-${q.id}`;
+
+                card.innerHTML = `
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-indigo-950 text-indigo-300 border border-indigo-500/30">
+                            Soal ${q.slotIndex} (${q.quadrant})
+                        </span>
+                        <span id="status-${q.id}" class="text-xs">
+                            ${q.isSolved ? '<i class="fa-solid fa-circle-check text-emerald-400"></i>' : '<i class="fa-regular fa-circle text-slate-500"></i>'}
+                        </span>
+                    </div>
+
+                    <div class="text-sm md:text-base font-semibold text-slate-100 mb-3 math-expr">
+                        ${q.qText} = ?
+                    </div>
+
+                    <!-- Target Dropzone -->
+                    <div id="${q.id}" data-qid="${q.id}" 
+                         class="dropzone w-full h-12 rounded-xl border-2 border-dashed border-slate-600/80 bg-slate-900/60 flex items-center justify-center p-1 text-sm font-bold text-amber-300">
+                        ${q.isSolved ? `<div class="w-full h-full rounded-lg bg-emerald-950/80 border border-emerald-500/50 flex items-center justify-center text-emerald-300">${q.correctAnswer}</div>` : '<span class="text-slate-500 text-xs font-normal">Lepas / Klik di sini</span>'}
+                    </div>
+                `;
+
+                questionsContainer.appendChild(card);
+
+                // Add drag/drop event listeners if not solved
+                if (!q.isSolved) {
+                    const dropTarget = card.querySelector(`#${q.id}`);
+                    dropTarget.addEventListener('dragover', handleDragOver);
+                    dropTarget.addEventListener('dragleave', handleDragLeave);
+                    dropTarget.addEventListener('drop', handleDrop);
+                    dropTarget.addEventListener('click', () => handleDropZoneClick(q.id));
+                }
+            });
+
+            // Render Answers
+            answersContainer.innerHTML = '';
+            answerOptions.forEach(ans => {
+                if (ans.isUsed) return; // Hide placed answers
+
+                const item = document.createElement('div');
+                item.id = ans.id;
+                item.draggable = true;
+                item.className = `draggable-item glass-card p-3 rounded-xl flex items-center justify-center text-sm font-bold text-sky-200 border border-sky-500/30 shadow hover:bg-slate-700/60 ${selectedAnswerId === ans.id ? 'selected' : ''}`;
+                item.textContent = ans.text;
+
+                // HTML5 Drag Events
+                item.addEventListener('dragstart', (e) => handleDragStart(e, ans));
+                item.addEventListener('dragend', handleDragEnd);
+
+                // Mobile/Click selection Event
+                item.addEventListener('click', () => handleAnswerSelect(ans.id));
+
+                answersContainer.appendChild(item);
+            });
+        }
+
+        let draggedAnswer = null;
+
+        function handleDragStart(e, ansObj) {
+            draggedAnswer = ansObj;
+            e.dataTransfer.setData('text/plain', ansObj.id);
+            e.dataTransfer.effectAllowed = 'move';
+            playSound('pickup');
+            e.target.classList.add('opacity-50');
+        }
+
+        function handleDragEnd(e) {
+            e.target.classList.remove('opacity-50');
+        }
+
+        function handleDragOver(e) {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+            e.currentTarget.classList.add('drag-over');
+        }
+
+        function handleDragLeave(e) {
+            e.currentTarget.classList.remove('drag-over');
+        }
+
+        function handleDrop(e) {
+            e.preventDefault();
+            const dropzone = e.currentTarget;
+            dropzone.classList.remove('drag-over');
+
+            const questionId = dropzone.getAttribute('data-qid');
+            const ansId = e.dataTransfer.getData('text/plain') || (draggedAnswer ? draggedAnswer.id : null);
+
+            if (ansId && questionId) {
+                verifyAnswer(questionId, ansId);
+            }
+        }
+
+        function handleAnswerSelect(ansId) {
+            playSound('pickup');
+            if (selectedAnswerId === ansId) {
+                selectedAnswerId = null; // deselect
+            } else {
+                selectedAnswerId = ansId;
+            }
+            renderGame();
+        }
+
+        function handleDropZoneClick(questionId) {
+            if (selectedAnswerId) {
+                verifyAnswer(questionId, selectedAnswerId);
+                selectedAnswerId = null;
+            }
+        }
+
+        function verifyAnswer(questionId, answerId) {
+            const question = activeQuestions.find(q => q.id === questionId);
+            const answer = answerOptions.find(a => a.id === answerId);
+
+            if (!question || !answer || question.isSolved) return;
+
+            const card = document.getElementById(`card-${questionId}`);
+
+            if (answer.text === question.correctAnswer) {
+                // Correct Answer!
+                playSound('correct');
+                question.isSolved = true;
+                answer.isUsed = true;
+                solvedCount++;
+                
+                // Calculate score: exact 100 when all 6 correct
+                totalScore = Math.round((solvedCount / 6) * 100);
+
+                // Update UI score
+                document.getElementById('score-display').textContent = `${totalScore} / 100`;
+                document.getElementById('progress-text').textContent = `${solvedCount} / 6 Terbuka`;
+
+                // Reveal Puzzle Piece
+                const puzzleMask = document.querySelector(`.puzzle-mask[data-piece="${question.slotIndex}"]`);
+                if (puzzleMask) {
+                    puzzleMask.style.opacity = '0';
+                    puzzleMask.style.transform = 'scale(0.8)';
+                }
+
+                renderGame();
+
+                // Check Victory condition
+                if (solvedCount === 6) {
+                    clearInterval(timerInterval);
+                    setTimeout(() => {
+                        playSound('victory');
+                        document.getElementById('final-score').textContent = totalScore;
+                        document.getElementById('final-time').textContent = formatTimer(timerSeconds);
+                        document.getElementById('modal-victory').classList.remove('hidden');
+                    }, 600);
+                }
+
+            } else {
+                // Wrong Answer
+                playSound('wrong');
+                card.classList.add('wrong');
+                setTimeout(() => {
+                    card.classList.remove('wrong');
+                }, 500);
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            // Group Selector Switcher
+            document.getElementById('group-select').addEventListener('change', (e) => {
+                currentGroup = parseInt(e.target.value, 10);
+                initGame();
+            });
+
+            // Game Mode Switchers
+            document.getElementById('mode-formula').addEventListener('click', (e) => {
+                if (currentMode === 'formula') return;
+                currentMode = 'formula';
+                e.target.className = 'mode-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-indigo-600 text-white shadow';
+                document.getElementById('mode-numeric').className = 'mode-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-800 text-slate-400 hover:bg-slate-700';
+                initGame();
+            });
+
+            document.getElementById('mode-numeric').addEventListener('click', (e) => {
+                if (currentMode === 'numeric') return;
+                currentMode = 'numeric';
+                e.target.className = 'mode-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-indigo-600 text-white shadow';
+                document.getElementById('mode-formula').className = 'mode-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-800 text-slate-400 hover:bg-slate-700';
+                initGame();
+            });
+
+            // Action Buttons
+            document.getElementById('btn-reset').addEventListener('click', initGame);
+            document.getElementById('btn-play-again').addEventListener('click', () => {
+                document.getElementById('modal-victory').classList.add('hidden');
+                initGame();
+            });
+
+            // Sound Toggle
+            document.getElementById('btn-sound').addEventListener('click', () => {
+                soundEnabled = !soundEnabled;
+                const icon = document.getElementById('sound-icon');
+                if (soundEnabled) {
+                    icon.className = 'fa-solid fa-volume-high text-sky-400';
+                } else {
+                    icon.className = 'fa-solid fa-volume-xmark text-slate-500';
+                }
+            });
+
+            // Theory Modal
+            const modalTheory = document.getElementById('modal-theory');
+            document.getElementById('btn-theory').addEventListener('click', () => {
+                modalTheory.classList.remove('hidden');
+            });
+            document.getElementById('close-theory').addEventListener('click', () => {
+                modalTheory.classList.add('hidden');
+            });
+
+            // Start First Game
+            initGame();
+        });
+    </script>
+</body>
+</html>
